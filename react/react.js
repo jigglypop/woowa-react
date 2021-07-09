@@ -17,24 +17,27 @@ const React = function () {
   function setHooks(_hooks) {
     global.hooks = _hooks;
   }
-  // 스타일링
-  // 초기 렌더링
-  function render(Component, target) {
-    // 메모셋 가져오기
-    // 루트 타겟 잡기
-    $target = target;
-    // 글로벌 컴포넌트 세팅, instance 만들기
-    let El = null;
-    // 초기 init 세팅
-    // 내부 클로저 global에 함수 인스턴스와 원형 달기
+  // 초기 글로벌 설정
+  function setGlobal(Component){
     global.Component = Component;
     const instance = global.Component();
     i = 0;
     global.instance = instance;
-    // Jsx
     let Jsx = global.instance.jsx;
+    // 키 생성
+    const jsxs = isComponent(Jsx) || [];
+    // 등록 컴포넌트 지우기
+    jsxs.forEach(jsx => Jsx = Jsx.replace(jsx, ""))
+    return [jsxs, Jsx]
+  }
+  // 초기 렌더링
+  function render(Component, target) {
+    // 루트 타겟 잡기
+    $target = target;
+    // 글로벌 컴포넌트 세팅, instance 만들기
+    const [jsxs, Jsx] = setGlobal(Component)
     // 새로운 element
-    El = document.createElement("div");
+    let El = document.createElement("div");
     El.id = getID();
     // 아우터 달기
     El.className = Component.name + "Outer" + " Outer";
@@ -42,88 +45,63 @@ const React = function () {
     global.id = El.id;
     global.name = Component.name;
     global.className = El.className;
-    // 키 생성
-    const jsxs = isComponent(Jsx) || [];
-    // 등록 컴포넌트 지우기
-    for (let jsx of jsxs) {
-      Jsx = Jsx.replace(jsx, "");
-    }
     // 재귀함수 부분
     El.innerHTML = Jsx;
     const modules = memoset.getModules();
     for (let jsx of jsxs) {
       // 태그 가져와서 컴포넌트 모듈 찾기
-      const tag = getTag(jsx);
-      const _Component = modules[tag];
-      // 클로저 잡기
-      const [_react, _cb, _target] = new Closure(_Component, El);
+      const [_react, _cb, _target] = setClosureByTag(jsx, modules, El) 
       // 렌더링 되기 직전
       _react.render(_cb, El);
-      // 재귀함수 후
-      // 마운트 준비
-      const _global = _react.global;
-      const _id = _react.global.id;
       // 훅 메모리제이션
-      memoset.setMemo(_id, _global);
-      // css 있으면
-      if (_global.instance.css) {
-        memoset.setCss(_id, _global.instance.css);
-      }
+      memoset.setMemo(_react.global.id, _react.global);
+      memoset.setCss(_react.global.id, _react.global.instance.css);
     }
     target.appendChild(El);
     // 컴포넌트 jsx가 있을 경우
     return global;
   }
 
+  // 태그로 클로저 세팅
+  function setClosureByTag(jsx, modules, El){
+    // 태그 가져와서 컴포넌트 모듈 찾기
+    const tag = getTag(jsx);
+    const _Component = modules[tag];
+    // 클로저 잡기
+    const [_react, _cb, _target] = new Closure(_Component, El);
+    return [_react, _cb, _target]
+  }
+
   // 리렌더링
   function rerender(Component, target, head) {
     // 메모셋 가져오기
     const _memo = memoset.getMemo();
-    // 루트 타겟 잡기
+    // 루트 타겟 잡기, 글로벌 세팅
     $target = target;
+    const [jsxs, Jsx] = setGlobal(Component)
     if (target === head) {
       const child = [];
       const now = document.getElementById(global.id);
-      for (let c of now.childNodes) {
-        if (c.classList) {
-          if (c.classList.contains("Outer")) {
-            child.push(c.cloneNode(true));
-          }
+      now.childNodes.forEach(item => {
+        if (item.classList && item.classList.contains("Outer")){
+          child.push(item.cloneNode(true))
         }
-      }
-      // 글로벌 컴포넌트 세팅, instance 만들기
-      // 있을 때
+      })
       // 메모리제이션 교체
       global = _memo[global.id];
+      // 내부 클로저 global에 함수 인스턴스와 원형 달기
       let El = document.getElementById(global.id);
-      global.Component = Component;
-      const instance = global.Component();
-      i = 0;
-      global.instance = instance;
-      let Jsx = global.instance.jsx;
-      // 컴포넌트 뽑기
-      const jsxs = isComponent(Jsx) || [];
-      // 등록 컴포넌트 지우기
-      for (let jsx of jsxs) {
-        Jsx = Jsx.replace(jsx, "");
-      }
       // 렌더링 부분
       El.innerHTML = Jsx;
       const modules = memoset.getModules();
       for (let jsx of jsxs) {
-        // 태그 가져와서 컴포넌트 모듈 찾기
-        const tag = getTag(jsx);
-        const _Component = modules[tag];
-        // 클로저 잡기
-        const [_react, _cb, _target] = new Closure(_Component, El);
+        const [_react, _cb, _target] = setClosureByTag(jsx, modules, El)
         // 렌더링 되기 직전
         _react.rerender(_cb, El, head);
         // 재귀함수 후
-        // 마운트 준비
-        const _global = _react.global;
-        const _id = _react.global.id;
         // 훅 메모리제이션
-        memoset.setMemo(_id, _global);
+        memoset.setMemo(_react.global.id, _react.global);
+        memoset.setCss(_react.global.id, _react.global.instance.css);
       }
       // 메서드 달아주기
       setMethods(global.id);
@@ -158,18 +136,14 @@ const React = function () {
     // 메서드 초기화
     setMethods(_react.global.id);
     // 해당 노드에 자식 중 컴포넌트가 있는지 확인 후 있으면 재귀함수 실행
-    for (let child of El.childNodes) {
-      if (child.classList) {
-        if (child.classList.contains("Outer")) {
-          const name = memo[child.id].name.split(" ")[1];
-          // 메모리제이션에서 Component 가져오기
-          const _Component = memoset.getModules()[name];
-          // 클로저 실행
-
-          resetClosure(now, child, _Component);
-        }
+    El.childNodes.forEach(child => {
+      if (child.classList && child.classList.contains("Outer")){
+        // 메모리제이션에서 Component 가져오고 클로저 실행
+        const name = memo[child.id].name.split(" ")[1];
+        const _Component = memoset.getModules()[name];
+        resetClosure(now, child, _Component);
       }
-    }
+    })
   }
   // 스타일링
   function renderStyle(root, className, csstext) {
@@ -177,17 +151,14 @@ const React = function () {
     // csstext 있으면 스타일링 실행
     if (csstext) styled(root, `.${className}`, csstext);
     const memo = memoset.getMemo();
-    for (let child of root.childNodes) {
-      if (child.classList) {
-        if (child.classList.contains("Outer")) {
-          const _className = memo[child.id].name + "Outer";
-          // 메모리제이션에서 css 가져오기
-          const _csstext = memoset.getCss(child.id);
-          // 클로저 실행
-          renderStyle(child, _className, _csstext);
-        }
+    root.childNodes.forEach(child => {
+      if (child.classList && child.classList.contains("Outer")){
+        // 메모리제이션에서 css 가져오고 클로저 실행
+        const _className = memo[child.id].name + "Outer";
+        const _csstext = memoset.getCss(child.id);
+        renderStyle(child, _className, _csstext);
       }
-    }
+    })
   }
   // useState
   function useState(initialState) {
