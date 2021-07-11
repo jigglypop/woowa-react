@@ -5,8 +5,6 @@ export default function App() {
     console.log("---앱 시작---");
   }, []);
 
-  const Arr = [1, 2, 3];
-
   return {
     css: ``,
     jsx: `
