@@ -4,6 +4,7 @@ const MemoSet = function () {
   let memo = {};
   let modules = {};
   let css = {};
+  let callback = {}
 
   return {
     // 훅 저장하기
@@ -13,6 +14,19 @@ const MemoSet = function () {
     },
     getMemo() {
       return memo;
+    },
+    // useEffect callback 함수 저장하기
+    setCallback(id, index, cb) {
+      // 없으면 빈 객체 생성
+      if (!callback[id]) callback[id] = {}
+      callback[id][index] = cb
+      return callback[id];
+    },
+    getCallbackById(id) {
+      return callback[id];
+    },
+    getCallback() {
+      return callback
     },
     // css
     setCss(id, value) {

@@ -1,4 +1,4 @@
-export default function Word() {
+export default function Word({title}) {
   const { useState } = this;
   const [wordA, setWordA] = useState("");
 
@@ -13,10 +13,10 @@ export default function Word() {
     `,
     jsx: `
     <div class="WordInner" >
-      <h1 class="text" >글자A: ${wordA}</h1>
+      <h1 class="text" >${title}: ${wordA}</h1>
       <button data-onClick="onWordA">글자 + A</button>
-      <WordB></WordB>
-      <WordB></WordB>
+      <WordB :title="글자B1" />
+      <WordB :title="글자B2" />
     </div>
     `,
   };

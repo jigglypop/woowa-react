@@ -8,17 +8,12 @@ export default function App() {
   const Arr = [1, 2, 3];
 
   return {
-    css: `
-      .AppInner {
-        color: yellow;
-      }
-    `,
+    css: ``,
     jsx: `
     <div class="AppInner" >
       <h1>앱부분</h1>
-      ${Arr.map((item) => {
-        return "<Count></Count>\n";
-      }).join("")}
+      <Count :title="안녕하세요" :name="염동환" />
+      <Count :title="저도 반갑습니다" :name="염동환" />
     </div>
     `,
   };

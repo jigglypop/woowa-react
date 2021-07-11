@@ -1,4 +1,4 @@
-export default function WordB() {
+export default function WordB({title}) {
   const { useState, useEffect } = this;
   const [wordB, setWordB] = useState("");
 
@@ -16,7 +16,7 @@ export default function WordB() {
     }`,
     jsx: `
     <div class="WordBInner" >
-      <h1>글자B: ${wordB}</h1>
+      <h1>${title}: ${wordB}</h1>
       <button data-onClick="onWordB">글자 + B</button>
     </div>
     `,

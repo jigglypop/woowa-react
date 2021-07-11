@@ -3,10 +3,6 @@ import React from "./react.js";
 export const Closure = function (cb, $target, _value) {
   const react = new React();
   const _cb = cb.bind(react);
-  // 원래 있던 클로저 복제
-  if (_value) {
-    react.setHooks(_value.hooks);
-  }
   return [react, _cb, $target];
 };
 
